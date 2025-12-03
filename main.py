@@ -1,5 +1,6 @@
 import hashlib
 import re
+import unittest
 
 import requests
 from bs4 import BeautifulSoup
@@ -49,7 +50,7 @@ def brain_codepoint():
     return code.replace("U+", "")
 
 def btc_genesis_date():
-    url = "https://raw.githubusercontent.com/https://raw.githubusercontent.com/bitcoin/bitcoin/master/src/kernel/chainparams.cpp"
+    url = "https://raw.githubusercontent.com/bitcoin/bitcoin/master/src/kernel/chainparams.cpp"
     src = requests.get(url).text
 
     match = re.search(r'CBlock\(.*nTime=(\d+),', src)
@@ -67,19 +68,52 @@ def kr2_isbn10():
             isbns = re.findall(r"\b\d-\d{2}-\d{6}-\d\b", maybe_isbn)
             return isbns[0].replace("-", "")
 
+def calculate_hash(voyager_date: str, rfc1149_date: str, brain_codepoint: str, btc_genesis_date: str, kr2_isbn10: str) -> str:
+    flag = f"FLAG{{{voyager_date}-{rfc1149_date}-{brain_codepoint}-{btc_genesis_date}-{kr2_isbn10}}}"
 
+    return hashlib.sha256(flag.encode("utf-8")).hexdigest()
 
-voyager_date = voyager_date()
-print(voyager_date)
-rfc1149_date = rfc1149_date()
-print(rfc1149_date)
-brain_codepoint = brain_codepoint()
-print(brain_codepoint)
-btc_genesis_date = btc_genesis_date()
-print(btc_genesis_date)
-kr2_isbn10 = kr2_isbn10()
-print(kr2_isbn10)
+class TestScrapers(unittest.TestCase):
+    def test_voyager_date_format(self):
+        d = voyager_date()
+        self.assertRegex(d, r"^[0-9]{8}$")
 
-flag = f"FLAG{{{voyager_date}-{rfc1149_date}-{brain_codepoint}-{btc_genesis_date}-{kr2_isbn10}}}"
+    def test_rfc1149_date_format(self):
+        d = rfc1149_date()
+        self.assertRegex(d, r"^[0-9]{8}$")
 
-print(hashlib.sha256(flag.encode("utf-8")).hexdigest())
+    def test_brain_codepoint_format(self):
+        cp = brain_codepoint()
+        self.assertRegex(cp, r"^[0-9A-F]+$")
+
+    def test_btc_genesis_date_format(self):
+        d = btc_genesis_date()
+        self.assertRegex(d, r"^[0-9]{8}$")
+
+    def test_kr2_isbn10_format(self):
+        isbn = kr2_isbn10()
+        self.assertRegex(isbn, r"^[0-9]{10}$")
+
+    def test_calculate_hash(self):
+        vd = voyager_date()
+        rfc = rfc1149_date()
+        cp = brain_codepoint()
+        btc = btc_genesis_date()
+        isbn = kr2_isbn10()
+
+        expected = "d311f26ea1a995af669a62758ad5e0ce2583331059fbfc5c04cc84b2d41f4aed"
+        self.assertEqual(calculate_hash(vd, rfc, cp, btc, isbn), expected)
+
+if __name__ == "__main__":
+    voyager_date = voyager_date()
+    print(voyager_date)
+    rfc1149_date = rfc1149_date()
+    print(rfc1149_date)
+    brain_codepoint = brain_codepoint()
+    print(brain_codepoint)
+    btc_genesis_date = btc_genesis_date()
+    print(btc_genesis_date)
+    kr2_isbn10 = kr2_isbn10()
+    print(kr2_isbn10)
+
+    print(calculate_hash(voyager_date, rfc1149_date, brain_codepoint, btc_genesis_date, kr2_isbn10))
